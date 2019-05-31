@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define MAX_COMMANDLINE_SIZE 2048
 #define MAX_TOKENS 100
@@ -23,6 +28,16 @@ char **parse_commandline(char *commandline, char **args, int *args_count)
   args[*args_count] = NULL;
   return args;
 }
+
+// Concatination function
+char *concat(const char *s1, const char *s2)
+{
+  char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+  // in real code you would check for errors in malloc here
+  strcpy(result, s1);
+  strcat(result, s2);
+  return result;
+}
 /**
  * Main
  */
@@ -31,15 +46,37 @@ int main(int argc, char **argv)
   char commandline[MAX_COMMANDLINE_SIZE];
   char *args[MAX_TOKENS];
   int args_count;
+
+  // Print a prompt on screen
   printf("%s", PROMPT);
+
+  // Accepts user input
   fgets(commandline, sizeof(commandline), stdin);
+
   // Parse command line
   parse_commandline(commandline, args, &args_count);
+
   // Open directory
+  DIR *d;
+  struct dirent *dir;
 
-  // Repeatly read and print entries
+  for (int i = 0; i < args_count; i++)
+  {
+    d = opendir(args[i]);
+    if (d)
+    {
+      // Repeatly read and print entries
+      while ((dir = readdir(d)) != NULL)
+      {
+        struct stat buf;
+        char *path = concat(commandline, dir->d_name);
+        stat(path, &buf);
 
-  // Close directory
-
+        printf("%5lld  %s\n", buf.st_size, dir->d_name);
+      }
+      // Close directory
+      closedir(d);
+    }
+  }
   return 0;
 }
