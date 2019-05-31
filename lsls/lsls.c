@@ -58,7 +58,19 @@ int main(int argc, char **argv)
 
   // Open directory
   DIR *d;
+  struct stat buf;
   struct dirent *dir;
+
+  if (args_count == 0)
+  {
+    printf("argscount: %d", args_count);
+    d = opendir(".");
+    while ((dir = readdir(d)) != NULL)
+    {
+      stat(dir->d_name, &buf);
+      printf("%5lld bytes  %s\n", buf.st_size, dir->d_name);
+    }
+  }
 
   for (int i = 0; i < args_count; i++)
   {
@@ -68,15 +80,26 @@ int main(int argc, char **argv)
       // Repeatly read and print entries
       while ((dir = readdir(d)) != NULL)
       {
-        struct stat buf;
         char *path = concat(commandline, dir->d_name);
         stat(path, &buf);
-
-        printf("%5lld  %s\n", buf.st_size, dir->d_name);
+        if (strncmp(dir->d_name, ".", 2) == 0)
+        {
+          printf("      <DIR>  %s\n", dir->d_name);
+        }
+        else if (strncmp(dir->d_name, "..", 2) == 0)
+        {
+          printf("      <DIR>  %s\n", dir->d_name);
+        }
+        else
+        {
+          // printf("file size is %lld\n", buf.st_size);
+          printf("%5lld bytes  %s\n", buf.st_size, dir->d_name);
+        }
       }
       // Close directory
       closedir(d);
     }
   }
+
   return 0;
 }
